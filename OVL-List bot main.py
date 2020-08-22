@@ -1,9 +1,3 @@
-
-import os
-import wptools
-import discord
-import wikipedia
-from dotenv import load_dotenv#bot.py
 import os
 import wptools
 import discord
