@@ -2,6 +2,9 @@ import os
 import wptools
 import discord
 import wikipedia
+import discogs_client
+import requests
+
 from dotenv import load_dotenv
 
 
@@ -12,6 +15,7 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = os.getenv('GUILD')
 ADMIN = int(os.getenv('ADMIN'))
 CHANNEL = int(os.getenv('CHANNEL'))
+DISCOGSTOKEN = os.getenv('DISCOGSTOKEN')
 
 client =  discord.Client()
 
@@ -41,35 +45,63 @@ async def on_message(message):
             x[s]=x[s].lstrip()
             x[s]=x[s].capitalize()
         
+        response = message.content[5:] 
         channel = client.get_channel(CHANNEL)
         
         result=wikipedia.search(x[0]+" "+x[1])
         
         if not result:
-            response = """The wikipedia search was unsuccessful. Please check your spelling. If the spelling is correct \
-the album might not be in wikipedia. If this is the case please contact staff for a manual review"""
-            await message.channel.send(response)
+            d=discogs_client.Client('Discordlist',user_token=DISCOGSTOKEN)
+            results=d.search(x[0],type='release')
+            id=str(results[0].id)
+                
+            params = (('', DISCOGSTOKEN),)
+            ab = requests.get('https://api.discogs.com/releases/'+id, params=params)
+            
+            y=ab.text.lower()
+            ind1=y.find("rock")
+            ind2=y.find("metal") 
+            ind3=y.find("punk") 
+            ind4=y.find("thrash")
+            ind5=y.find("blues")
+            
+            if (ind1+ind2+ind3+ind4+ind5+5>0):
+                await channel.send(response)
+            
             return
-        response = message.content[5:] 
+        
         ab = wptools.page(result[0]).get_parse()
         infobox = ab.data['infobox']
         
         y= infobox.get("genre")
         if not y:
-            response = """The wikipedia article does not include a genre for this album. I've messaged staff for a manual review"""
-            await message.channel.send(response)
-            user = client.get_user(ADMIN)
-            await user.send('An album with no genre specified in wikipedia has been submitted. Please check.')
-            return
-        
-        y= y.lower()        
+            d=discogs_client.Client('Discordlist',user_token=DISCOGSTOKEN)
+            results=d.search(x[0],type='release')
+            print(results[0].title)
+            id=str(results[0].id)
+            print(id)
+            params = (('', 'rGnUvRXwxRqwrHrNGLHTmqTQYbHnCLAefiFhWQpA'),)
+            ab = requests.get('https://api.discogs.com/releases/'+id, params=params)
+            
+            y=ab.text.lower()
+            ind1=y.find("rock")
+            ind2=y.find("metal")
+            ind3=y.find("punk") 
+            ind4=y.find("thrash")
+            ind5=y.find("blues")
+            if (ind1+ind2+ind3+ind4+ind5+5>0):
+                await channel.send(response) 
+            else:
+                user = client.get_user(ADMIN)
+                await user.send('Non rock album submitted. Please check.') 
+            return        
+        y= y.lower()         
         
         ind1=y.find("rock")
         ind2=y.find("metal")
         ind3=y.find("punk") 
         ind4=y.find("thrash")
         ind5=y.find("blues")
-        y= y.replace("\n"," ")
  
         if (ind1+ind2+ind3+ind4+ind5+5>0):
             await channel.send(response)
