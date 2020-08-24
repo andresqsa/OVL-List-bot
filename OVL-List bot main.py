@@ -5,6 +5,7 @@ import wikipedia
 import discogs_client
 import requests
 
+from extraction import extraction
 from dotenv import load_dotenv
 
 
@@ -34,23 +35,27 @@ async def on_message(message):
     if message.author == client.user:
         return
     if '.sub' in message.content.lower():
-        album = message.content.lower()[5:]
-        x = album.split("//")
-        if len(x)<4:
-            response= """There's (at least) a missing item in your submission. Please use the format: 
-.sub Album // Artist // Year // Genre"""
-            await message.channel.send(response)
-            return
-        for s in range(4):
-            x[s]=x[s].lstrip()
-            x[s]=x[s].capitalize()
         
-        response = message.content[5:] 
+        mes=extraction(message)
+        
+        if mes.get("format")==0:
+            channel=message.channel()
+            response="There's (at least) a missing item in your submission. Please use the format: \n.sub Album // Artist // Year // Genre"
+            await channel.send(response)
+            return
+        
         channel = client.get_channel(CHANNEL)
         
-        result=wikipedia.search(x[0]+" "+x[1])
+        title=mes.get("title")
+        artist=mes.get("artist")
+        
+        genre=
+        
+        result=wikipedia.search(title+" "+artist)
         
         if not result:
+            
+            
             d=discogs_client.Client('Discordlist',user_token=DISCOGSTOKEN)
             results=d.search(x[0],type='release')
             id=str(results[0].id)
